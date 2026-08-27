@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\ShippingManagementApi.Application\ShippingManagementApi.Application.csproj" />
     <ProjectReference Include="..\..\src\ShippingManagementApi.Domain\ShippingManagementApi.Domain.csproj" />
+    <ProjectReference Include="..\..\src\ShippingManagementApi.Infrastructure\ShippingManagementApi.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
