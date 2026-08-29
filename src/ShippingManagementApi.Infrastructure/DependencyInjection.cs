@@ -10,6 +10,8 @@ using ShippingManagementApi.Application.Security;
 using ShippingManagementApi.Infrastructure.Identity;
 using ShippingManagementApi.Infrastructure.Merchants;
 using ShippingManagementApi.Infrastructure.Persistence;
+using ShippingManagementApi.Application.Carriers;
+using ShippingManagementApi.Infrastructure.Carriers;
 
 namespace ShippingManagementApi.Infrastructure;
 
@@ -68,6 +70,10 @@ public static class DependencyInjection
         services.AddSingleton(TimeProvider.System);
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<IMerchantService, MerchantService>();
+        services.AddScoped<ICarrierManagementService, CarrierManagementService>();
+        services.AddScoped<ICarrierCatalogService, CarrierCatalogService>();
+        services.AddSingleton<ICarrierProvider, DemoCarrier>();
+        services.AddSingleton<ICarrierProviderResolver, CarrierProviderResolver>();
         return services;
     }
 }

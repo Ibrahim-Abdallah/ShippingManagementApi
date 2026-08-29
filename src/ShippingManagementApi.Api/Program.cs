@@ -9,6 +9,7 @@ using ShippingManagementApi.Application;
 using ShippingManagementApi.Application.Security;
 using ShippingManagementApi.Infrastructure;
 using ShippingManagementApi.Infrastructure.Identity;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,7 @@ builder.Services
     .AddApplication()
     .AddInfrastructure(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
+builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddScoped<ICurrentUserContext, HttpCurrentUserContext>();
 
 builder.Services.AddProblemDetails(options =>
@@ -50,7 +52,10 @@ builder.Services.AddOpenApi(options =>
         {
             [new OpenApiSecuritySchemeReference("Bearer", document)] = []
         };
-        foreach (var path in new[] { "/api/auth/me", "/api/admin/merchants", "/api/merchants/{id}" })
+        foreach (var path in document.Paths.Keys.Where(path =>
+                     path.StartsWith("/api/admin/", StringComparison.Ordinal) ||
+                     path.StartsWith("/api/carriers", StringComparison.Ordinal) ||
+                     path is "/api/auth/me" or "/api/merchants/{id}"))
         {
             if (!document.Paths.TryGetValue(path, out var pathItem) || pathItem.Operations is null) continue;
             foreach (var operation in pathItem.Operations.Values)
@@ -97,6 +102,7 @@ if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
 }
 
 app.MapPhase02Endpoints();
+app.MapPhase03Endpoints();
 
 app.MapGet("/health", async (HealthCheckService healthCheckService, CancellationToken cancellationToken) =>
     {

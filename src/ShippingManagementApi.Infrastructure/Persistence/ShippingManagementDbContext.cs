@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using ShippingManagementApi.Domain.Merchants;
+using ShippingManagementApi.Domain.Carriers;
 using ShippingManagementApi.Infrastructure.Identity;
 
 namespace ShippingManagementApi.Infrastructure.Persistence;
@@ -11,6 +12,8 @@ public sealed class ShippingManagementDbContext(DbContextOptions<ShippingManagem
 {
     public DbSet<Merchant> Merchants => Set<Merchant>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<Carrier> Carriers => Set<Carrier>();
+    public DbSet<CarrierService> CarrierServices => Set<CarrierService>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
