@@ -18,6 +18,7 @@ builder.Services
     .AddInfrastructure(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
 builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+builder.Services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadRequest = true);
 builder.Services.AddScoped<ICurrentUserContext, HttpCurrentUserContext>();
 
 builder.Services.AddProblemDetails(options =>
@@ -55,6 +56,7 @@ builder.Services.AddOpenApi(options =>
         foreach (var path in document.Paths.Keys.Where(path =>
                      path.StartsWith("/api/admin/", StringComparison.Ordinal) ||
                      path.StartsWith("/api/carriers", StringComparison.Ordinal) ||
+                     path.StartsWith("/api/quotes", StringComparison.Ordinal) ||
                      path is "/api/auth/me" or "/api/merchants/{id}"))
         {
             if (!document.Paths.TryGetValue(path, out var pathItem) || pathItem.Operations is null) continue;
@@ -103,6 +105,7 @@ if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
 
 app.MapPhase02Endpoints();
 app.MapPhase03Endpoints();
+app.MapPhase04Endpoints();
 
 app.MapGet("/health", async (HealthCheckService healthCheckService, CancellationToken cancellationToken) =>
     {

@@ -43,3 +43,15 @@ Administrator endpoints expose all configuration, including inactive records. Au
 ## Phase 01 foundation
 
 Phase 01 supplies only the solution foundation: project boundaries, dependency injection entry points, configurable EF Core SQL Server registration, an empty DbContext, safe Problem Details handling, correlation-aware logging, health checks, OpenAPI with Scalar, and executable test projects. Shipping entities, authentication, merchants, carriers, quotes, shipments, background processing, and all other business workflows are intentionally deferred to their assigned phases.
+
+## Phase 04 shipping quotes and rate shopping
+
+`ShippingQuote` is an immutable merchant-owned aggregate containing origin/destination value snapshots, quote-only package snapshots, a normalized currency, creation/expiration timestamps, and one or more immutable `QuoteOption` snapshots. Expiration is never persisted as mutable status: API responses compute `Active` or `Expired` from the injected `TimeProvider`, with the boundary defined as `now >= ExpiresAtUtc`. `ShippingQuotes:LifetimeMinutes` controls lifetime and is validated at startup.
+
+Application owns the provider-neutral `ICarrierRateProvider` capability and rate request/result contracts. Infrastructure resolves the persisted active carrier through the existing `ICarrierProviderResolver`; controllers never branch on carrier codes or depend on `DemoCarrier`. Only active services matching optional service-level constraints are offered, and a COD requirement filters carriers by their persisted `SupportsCod` capability.
+
+DemoCarrier rates are offline and deterministic. Weight is normalized using `lb × 0.45359237`; dimensions use `in × 2.54`; volumetric kilograms are `lengthCm × widthCm × heightCm / 5000`; each package contributes the greater of actual and volumetric kilograms. STANDARD is `8.00 + kg × 1.50`, EXPRESS is `14.00 + kg × 2.25`, and final amounts use two-decimal `AwayFromZero` rounding. This is test behavior, not a real tariff.
+
+Quote options deliberately have no foreign keys to current carrier or service configuration. They store historical carrier/service identifiers, names, codes, service level, ETA, price, currency, and a private provider reference. Public DTOs omit the provider reference. Consequently deactivation or later removal of catalog configuration affects only new rate shopping and cannot rewrite a historical quote.
+
+The merchant API exposes only `POST /api/quotes`, `GET /api/quotes/{quoteId}`, and paginated `GET /api/quotes`. Merchant identity comes exclusively from authenticated claims, owned lookups include `MerchantId` in SQL, cross-merchant reads return 404, and history count/pagination execute in the database. No shipment, confirmation, label, tracking, pickup, cancellation, webhook, or COD collection behavior is part of this phase.
