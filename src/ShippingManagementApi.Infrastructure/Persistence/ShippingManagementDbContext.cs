@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using ShippingManagementApi.Domain.Merchants;
 using ShippingManagementApi.Domain.Carriers;
 using ShippingManagementApi.Infrastructure.Identity;
+using ShippingManagementApi.Domain.Quotes;
 
 namespace ShippingManagementApi.Infrastructure.Persistence;
 
@@ -14,6 +15,9 @@ public sealed class ShippingManagementDbContext(DbContextOptions<ShippingManagem
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<Carrier> Carriers => Set<Carrier>();
     public DbSet<CarrierService> CarrierServices => Set<CarrierService>();
+    public DbSet<ShippingQuote> ShippingQuotes => Set<ShippingQuote>();
+    public DbSet<ShippingQuotePackage> ShippingQuotePackages => Set<ShippingQuotePackage>();
+    public DbSet<QuoteOption> QuoteOptions => Set<QuoteOption>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

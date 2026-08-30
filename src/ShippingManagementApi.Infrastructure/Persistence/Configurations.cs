@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using ShippingManagementApi.Domain.Merchants;
 using ShippingManagementApi.Infrastructure.Identity;
 using ShippingManagementApi.Domain.Carriers;
+using ShippingManagementApi.Domain.Quotes;
 
 namespace ShippingManagementApi.Infrastructure.Persistence;
 
@@ -103,5 +104,70 @@ internal sealed class CarrierServiceConfiguration : IEntityTypeConfiguration<Car
                 ServiceLevel = ServiceLevel.Express, IsActive = true, EstimatedMinDays = 1, EstimatedMaxDays = 2,
                 CreatedAtUtc = DemoCarrierSeed.CreatedAtUtc, UpdatedAtUtc = DemoCarrierSeed.CreatedAtUtc
             });
+    }
+}
+
+internal sealed class ShippingQuoteConfiguration : IEntityTypeConfiguration<ShippingQuote>
+{
+    public void Configure(EntityTypeBuilder<ShippingQuote> builder)
+    {
+        builder.ToTable("ShippingQuotes", table => table.HasCheckConstraint("CK_ShippingQuotes_Expiration", "[ExpiresAtUtc] > [CreatedAtUtc]"));
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Currency).HasMaxLength(3).IsRequired();
+        ConfigureAddress(builder.OwnsOne(x => x.Origin), "Origin");
+        ConfigureAddress(builder.OwnsOne(x => x.Destination), "Destination");
+        builder.HasOne<Merchant>().WithMany().HasForeignKey(x => x.MerchantId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasMany(x => x.Packages).WithOne().HasForeignKey(x => x.ShippingQuoteId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasMany(x => x.Options).WithOne().HasForeignKey(x => x.ShippingQuoteId).OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(x => x.Packages).HasField("_packages").UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.Navigation(x => x.Options).HasField("_options").UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.HasIndex(x => new { x.MerchantId, x.CreatedAtUtc });
+        builder.HasIndex(x => x.ExpiresAtUtc);
+    }
+    private static void ConfigureAddress(OwnedNavigationBuilder<ShippingQuote, QuoteAddress> builder, string prefix)
+    {
+        builder.Property(x => x.CountryCode).HasColumnName(prefix + "CountryCode").HasMaxLength(2).IsRequired();
+        builder.Property(x => x.City).HasColumnName(prefix + "City").HasMaxLength(QuoteAddress.MaximumCityLength).IsRequired();
+        builder.Property(x => x.StateOrProvince).HasColumnName(prefix + "StateOrProvince").HasMaxLength(QuoteAddress.MaximumStateLength);
+        builder.Property(x => x.PostalCode).HasColumnName(prefix + "PostalCode").HasMaxLength(QuoteAddress.MaximumPostalCodeLength);
+        builder.Property(x => x.AddressLine1).HasColumnName(prefix + "AddressLine1").HasMaxLength(QuoteAddress.MaximumAddressLineLength);
+    }
+}
+
+internal sealed class ShippingQuotePackageConfiguration : IEntityTypeConfiguration<ShippingQuotePackage>
+{
+    public void Configure(EntityTypeBuilder<ShippingQuotePackage> builder)
+    {
+        builder.ToTable("ShippingQuotePackages", table => table.HasCheckConstraint("CK_ShippingQuotePackages_Weight", "[Weight] > 0"));
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Weight).HasPrecision(18, 6);
+        builder.Property(x => x.WeightUnit).HasConversion<string>().HasMaxLength(10);
+        builder.Property(x => x.Length).HasPrecision(18, 6); builder.Property(x => x.Width).HasPrecision(18, 6); builder.Property(x => x.Height).HasPrecision(18, 6);
+        builder.Property(x => x.DimensionUnit).HasConversion<string>().HasMaxLength(10);
+        builder.Property(x => x.DeclaredValue).HasPrecision(18, 2);
+        builder.HasIndex(x => x.ShippingQuoteId);
+    }
+}
+
+internal sealed class QuoteOptionConfiguration : IEntityTypeConfiguration<QuoteOption>
+{
+    public void Configure(EntityTypeBuilder<QuoteOption> builder)
+    {
+        builder.ToTable("QuoteOptions", table =>
+        {
+            table.HasCheckConstraint("CK_QuoteOptions_Amount", "[Amount] > 0");
+            table.HasCheckConstraint("CK_QuoteOptions_EstimatedRange", "[EstimatedMinDays] >= 0 AND [EstimatedMaxDays] >= [EstimatedMinDays]");
+        });
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.CarrierCode).HasMaxLength(QuoteOption.MaximumCodeLength).IsRequired();
+        builder.Property(x => x.CarrierName).HasMaxLength(QuoteOption.MaximumNameLength).IsRequired();
+        builder.Property(x => x.ServiceCode).HasMaxLength(QuoteOption.MaximumCodeLength).IsRequired();
+        builder.Property(x => x.ServiceName).HasMaxLength(QuoteOption.MaximumNameLength).IsRequired();
+        builder.Property(x => x.ServiceLevel).HasConversion<string>().HasMaxLength(20).IsRequired();
+        builder.Property(x => x.Amount).HasPrecision(18, 2);
+        builder.Property(x => x.Currency).HasMaxLength(3).IsRequired();
+        builder.Property(x => x.ProviderReference).HasMaxLength(QuoteOption.MaximumProviderReferenceLength);
+        builder.HasIndex(x => x.ShippingQuoteId);
+        builder.HasIndex(x => new { x.ShippingQuoteId, x.CarrierServiceId }).IsUnique();
     }
 }

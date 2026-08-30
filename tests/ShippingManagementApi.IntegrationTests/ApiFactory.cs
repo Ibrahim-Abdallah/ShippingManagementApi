@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using ShippingManagementApi.Application.Security;
 using ShippingManagementApi.Domain.Merchants;
 using ShippingManagementApi.Infrastructure.Identity;
@@ -27,6 +28,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("Jwt:SigningKey", "TEST-ONLY-signing-key-with-at-least-32-bytes-0001");
         builder.ConfigureServices(services =>
         {
+            services.AddLogging(logging => logging.ClearProviders());
             services.RemoveAll<DbContextOptions<ShippingManagementDbContext>>();
             services.RemoveAll<IDbContextOptionsConfiguration<ShippingManagementDbContext>>();
             services.AddDbContext<ShippingManagementDbContext>(options => options.UseSqlite(_connection));

@@ -12,6 +12,8 @@ using ShippingManagementApi.Infrastructure.Merchants;
 using ShippingManagementApi.Infrastructure.Persistence;
 using ShippingManagementApi.Application.Carriers;
 using ShippingManagementApi.Infrastructure.Carriers;
+using ShippingManagementApi.Application.Quotes;
+using ShippingManagementApi.Infrastructure.Quotes;
 
 namespace ShippingManagementApi.Infrastructure;
 
@@ -46,6 +48,8 @@ public static class DependencyInjection
 
         services.AddOptions<JwtOptions>().Bind(configuration.GetSection(JwtOptions.SectionName))
             .ValidateDataAnnotations().ValidateOnStart();
+        services.AddOptions<ShippingQuoteOptions>().Bind(configuration.GetSection(ShippingQuoteOptions.SectionName))
+            .ValidateDataAnnotations().ValidateOnStart();
         var jwt = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
         if (string.IsNullOrWhiteSpace(jwt.SigningKey) || Encoding.UTF8.GetByteCount(jwt.SigningKey) < 32)
             throw new InvalidOperationException("Jwt:SigningKey must be configured externally and contain at least 32 UTF-8 bytes.");
@@ -72,6 +76,7 @@ public static class DependencyInjection
         services.AddScoped<IMerchantService, MerchantService>();
         services.AddScoped<ICarrierManagementService, CarrierManagementService>();
         services.AddScoped<ICarrierCatalogService, CarrierCatalogService>();
+        services.AddScoped<IShippingQuoteService, ShippingQuoteService>();
         services.AddSingleton<ICarrierProvider, DemoCarrier>();
         services.AddSingleton<ICarrierProviderResolver, CarrierProviderResolver>();
         return services;
